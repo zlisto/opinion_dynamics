@@ -1,5 +1,5 @@
 # Opinion Dynamics
-This is the repository for code to learn optimal opinion policies for agents trying to maximize an objective function of the opinions in a social network.
+This is the repository for code to learn optimal opinion policies for agents trying to maximize an objective function of the opinions in a social network.  The repository includes two Twitter networks for Brexit and Gilets Jaunes.  These datasets include the network structure, user opinions on the relevant topic, and their tweet rate.
 
 
 ## Notebooks
