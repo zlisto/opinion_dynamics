@@ -11,7 +11,7 @@ import seaborn as sns
 
 
 def load_brexit():
-  path = '/content/drive/MyDrive/SocialNetworkAndOpinionDatasets/Brexit/'
+  path = 'data/'
   fname_opinion_rate = f"{path}Brexit_sample_01.csv"
   fname_adjlist  = f"{path}Brexit_sample.adjlist"
 
@@ -33,7 +33,7 @@ def load_brexit():
   return H, np.array(opinions_initial), np.array(rate) , mapping_rev
 
 def load_giletsjaunes():
-  path = '/content/drive/MyDrive/SocialNetworkAndOpinionDatasets/GiletsJaunes/'
+  path = 'data/'
   fname_opinion_rate = f"{path}GiletsJaunes_sample_02.csv"
   fname_adjlist  = f"{path}GiletsJaunes_sample_02.adjlist"
 
