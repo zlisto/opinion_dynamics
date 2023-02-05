@@ -37,7 +37,7 @@ def plot_opinions(opinions, agent_opinions, dt, reward = 0, quantile_plot = Fals
   plt.xlabel('Time')
   plt.plot(T,agent_opinions, linewidth = 3, 
           color = 'red', label = 'Agent')
-  plt.title(f"R(T) = {reward:.2f}")
+  plt.title(f"R(T) = {reward:.4f}")
   plt.legend()
  
   return fig
