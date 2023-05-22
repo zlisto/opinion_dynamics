@@ -26,16 +26,16 @@ def dshift(x,tau,omega):
 def objective_value(OBJECTIVE:str,Opinions:np.ndarray):
     if OBJECTIVE == "MEAN":
         objective = np.mean(Opinions[-1,:])  #maximize mean
-    elif OBJECTIVE == "VARIANCE":
+    elif OBJECTIVE == "VAR":
         objective = np.var(Opinions[-1,:])  #maximize variance
-    elif OBJECTIVE == "VARIANCE_NEG":
+    elif OBJECTIVE == "VAR_NEG":
         objective = -np.var(Opinions[-1,:])  #maximize variance
     elif OBJECTIVE == "MEAN_TAVG":
         objective = Opinions.mean()  #time avg mean
     elif OBJECTIVE == "VAR_TAVG":
         objective = Opinions.var(axis = 1).mean() #time avg variance
     elif OBJECTIVE == "VAR_TAVG_NEG":
-        objective = Opinions.var(axis = 1).mean() #neg time avg variance
+        objective = -Opinions.var(axis = 1).mean() #neg time avg variance
     return objective
 
 
@@ -44,9 +44,9 @@ def boundary_condition_Pf(OBJECTIVE:str, Opinions:np.ndarray):
     n = Opinions.shape[1]  #number of nodes in network (not counting agents)
     if OBJECTIVE == "MEAN":
         Pf = np.ones(n) #final adjoint value for mean objective
-    elif OBJECTIVE == "VARIANCE":
+    elif OBJECTIVE == "VAR":
         Pf = (Opinions[-1,:] - np.mean(Opinions[-1,:])) #final variance
-    elif OBJECTIVE == "VARIANCE_NEG":
+    elif OBJECTIVE == "VAR_NEG":
         Pf = -(Opinions[-1,:] - np.mean(Opinions[-1,:]))  #final neg variance
     elif OBJECTIVE == "MEAN_TAVG":
         Pf = np.zeros(n)  #time avg mean
@@ -167,12 +167,12 @@ def step_fast_adjoint(opinions:np.ndarray, ps:np.ndarray, rates:List, A:scipy.sp
     Dpdt = L-F
     
     if OBJECTIVE == "MEAN_TAVG":
-        Dpdt+=  np.ones(n)/tmax/n
+        Dpdt+=  -np.ones(n)/tmax/n
     elif OBJECTIVE == "VAR_TAVG":
-        Dpdt+=  2*(1-1/n)*(opinions - opinions.mean())/tmax/n
+        Dpdt+=  -2*(1-1/n)*(opinions - opinions.mean())/tmax/n
         
     elif OBJECTIVE == "VAR_TAVG_NEG":
-        Dpdt+=  -2*(1-1/n)*(opinions - opinions.mean())/tmax/n
+        Dpdt+=  2*(1-1/n)*(opinions - opinions.mean())/tmax/n
     
     return Dpdt
 
