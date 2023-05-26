@@ -42,7 +42,7 @@ def plot_opinions(opinions, agent_opinions, dt, reward = 0, quantile_plot = Fals
   plt.legend()
  
   return fig
-<<<<<<< HEAD
+
 
 
 
@@ -134,5 +134,4 @@ def visualize_network(G0:nx.DiGraph,Opinions0:np.ndarray, Rates:np.ndarray):
     return G
 
 
-=======
->>>>>>> 07f59b514762b3daf99f9d8afcc0ec41118c5126
+
