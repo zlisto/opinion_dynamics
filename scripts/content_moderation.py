@@ -13,11 +13,13 @@ from typing import List, Set, Dict, Tuple
 #######################################################
 #shift function f
 def shift(x,tau,omega):
+    x = np.clip(x, -1, 1)
     y = omega *x*np.exp(-np.abs(x/tau)**2/2)
     return(y)
 
 #derivative of shift function g
 def dshift(x,tau,omega):
+    x = np.clip(x, -1, 1)
     y = omega*(1-np.abs(x/tau)**2)*np.exp(-(x/tau)**2/2)
     return(y)
 
@@ -78,13 +80,33 @@ def shadowban_opt(opinions:np.ndarray, ps:np.ndarray, rates:List, A:scipy.sparse
     result = (nonzero_elements >= -alpha/ne/tmax).astype(int) # Perform element-wise comparison
 
     row_indices, col_indices = C.nonzero()
-    Ustar = csr_matrix((result, (row_indices, col_indices)), shape=C.shape)
+    Ustar = coo_matrix((result, (row_indices, col_indices)), shape=C.shape)
 
     return Ustar
 
 ############################################################
 #Opinion simulator using odeint
+def linear_interpolation(t, Y, T):
+    min_time = np.min(T)
+    max_time = np.max(T)
+    
+   # if t < min_time or t > max_time:
+   #     raise ValueError("Time 't' is outside the range of interpolation.")
+    
+    nt, n = Y.shape
+    
+    # Compute the indices for neighboring time points
+    idx_left = np.searchsorted(T, t, side='right') - 1
+    idx_right = idx_left + 1
+    
+    nsteps = len(T)
+    if idx_right == nsteps:
+        yint = Y[nsteps-1]
+    else:
+    # Perform the linear interpolation for all columns simultaneously
+        yint = ((Y[idx_right] - Y[idx_left]) / (T[idx_right] - T[idx_left])) * (t - T[idx_left]) + Y[idx_left]
 
+    return yint   
 #time derivative of opinions
 def step_fast_opinion(opinions:np.ndarray, rates:List, A:scipy.sparse.coo_matrix, tau:float, omega:float, 
                       U = None):
@@ -103,20 +125,33 @@ def step_fast_opinion(opinions:np.ndarray, rates:List, A:scipy.sparse.coo_matrix
     return Dxdt
 
 #time derivative of opinions for odeint
-def dxdt(opinions:np.ndarray, t:float, rates:List, A, tau:float, omega:float):    
-    return step_fast_opinion(opinions, rates, A, tau, omega)
+def dxdt(opinions:np.ndarray, t:float, rates:List, A, tau:float, omega:float, U = None):    
+    return step_fast_opinion(opinions, rates, A, tau, omega, U)
+
+#jacobian of opinion dynamics
+def jacfun(opinions:np.ndarray, t:float, rates:List, A, tau:float, omega:float):    
+    n = len(opinions)
+    data = dshift(opinions[A.row]- opinions[A.col],tau,omega) #shift value
+    dShift_matrix = coo_matrix((data, (A.row, A.col)), shape=A.shape) #create shift matrix in coordinate format (row index, col index, value)
+    Rate_matrix = diags(rates,0) #create a diagonal matrix with Rates values
+
+    jac = Rate_matrix @ dShift_matrix # matrix multiply
+    Dsum = jac.sum(axis = 0).A1 #contribution from following of node
+    # Assign Dsum to the diagonal of jac
+    
+    diagonal_indices = np.arange(min(jac.shape[0], jac.shape[1]))
+    jac = jac - coo_matrix((Dsum[diagonal_indices], (diagonal_indices, diagonal_indices)), shape=jac.shape)
+    jac = jac.T
+
+    r=jac.sum(axis=1) 
+    #assert np.all(r==0)
+    return jac.todense()
 
 #time derivative of opinions with optimal shadowbanning  for odeint (needs adjoints)
 def dxdt_opt(opinions:np.ndarray, t:float, rates:List, A, tau:float, omega:float, 
              P:np.ndarray, nsteps:int, tmax:float,  alpha:float):
-    T = np.linspace(0, tmax, nsteps)  
-    if t<=0:
-        tind = 1
-    elif t>=tmax:
-        tind = nsteps-1
-    else:
-        tind = np.argmax(T>=t)  #time index in Opinions and agents_opinions of time t
-    ps = P[tind,:]
+    T = np.linspace(0, tmax, nsteps)
+    ps = linear_interpolation(t, P, T)
     Ustar = shadowban_opt(opinions, ps, rates, A, tau, omega, alpha, tmax)
     return step_fast_opinion(opinions, rates, A, tau, omega, Ustar)
 
@@ -128,7 +163,8 @@ def simulate_opinion(opinions0:np.ndarray, rates:List, A:scipy.sparse.coo_matrix
     T = np.linspace(0, tmax, nsteps)  
 
     # Solve the differential equation using odeint    
-    Opinions = odeint( dxdt, x0, T, args=(rates, A, tau, omega))
+    Opinions = odeint(dxdt, x0, T, args=(rates, A, tau, omega)
+                      , Dfun = jacfun)
 
     return Opinions, T
 
@@ -177,28 +213,24 @@ def step_fast_adjoint(opinions:np.ndarray, ps:np.ndarray, rates:List, A:scipy.sp
     return Dpdt
 
 #time reverse derivative for numeric integrator odeint
-def dpdt_rev(ps, t, Opinions, rates, A, nsteps, tmax, tau:float, omega:float,  OBJECTIVE:str, U = None):
+def dpdt_rev(ps, t, Opinions, rates, A, nsteps, tmax, tau:float, omega:float,  OBJECTIVE:str, alpha:float):
     #assert t >= 0 and t <= tmax, f"t = {t} is out of bounds."
-    T = np.linspace(0, tmax, nsteps)  
-    if t<=0:
-        tind = 1
-    elif t>=tmax:
-        tind = nsteps-1
-    else:
-        tind = np.argmax(T>=t)  #time index in Opinions and agents_opinions of time t
-    opinions = Opinions[tind,:]
-    return step_fast_adjoint(opinions, ps, rates, A, tau, omega, tmax, OBJECTIVE, U)
+    
+    T = np.linspace(0, tmax, nsteps)
+    opinions = linear_interpolation(t, Opinions, T)
+    Ustar = shadowban_opt(opinions, ps, rates, A, tau, omega, alpha, tmax)
+    return step_fast_adjoint(opinions, ps, rates, A, tau, omega, tmax, OBJECTIVE, Ustar)
 
 
 
  
 def simulate_adjoint(pf:np.ndarray, Opinions:np.ndarray, rates:List, A:scipy.sparse.coo_matrix, 
-                     nsteps:int, tmax:float, tau:float, omega:float,  OBJECTIVE:str, U = None):
+                     nsteps:int, tmax:float, tau:float, omega:float,  OBJECTIVE:str, alpha:float):
     
     Trev = np.linspace(tmax, 0 ,nsteps)  #reversed time because adjoint is simulated backwards  
 
     # Solve the differential equation using odeint
-    args = (Opinions, rates, A, nsteps, tmax, tau, omega, OBJECTIVE, U)
+    args = (Opinions, rates, A, nsteps, tmax, tau, omega, OBJECTIVE, alpha)
     Prev = odeint(dpdt_rev, pf, Trev, args=args)
     T = Trev[::-1]
     P = Prev[::-1, :]
@@ -227,20 +259,7 @@ def dfun(t,opinions,args):
     rates, A, tau, omega = args
     return step_fast_opinion(opinions, rates, A, tau, omega)
 
-def jacfun(t, opinions, args):
-    rates, A, tau, omega = args
-    n = len(opinions)
-    data = dshift(opinions[A.row]- opinions[A.col],tau,omega) #shift value
-    dShift_matrix = coo_matrix((data, (A.row, A.col)), shape=A.shape) #create shift matrix in coordinate format (row index, col index, value)
-    Rate_matrix = diags(rates,0) #create a diagonal matrix with Rates values
 
-    jac = Rate_matrix @ dShift_matrix # matrix multiply
-    Dsum = jac.sum(axis = 0).A1 #contribution from following of node
-        
-    for i in range(n):
-        jac[i,i] =  -Dsum[i]
-        
-    return jac
 
 def simulate_opinion_stiff(opinions0:np.ndarray, rates:List, A:scipy.sparse.coo_matrix, 
                       nsteps:int, tmax:float, tau:float, omega:float):
