@@ -354,3 +354,52 @@ def simulate_adjoint_stiff(pf:np.ndarray, Opinions:np.ndarray, rates:List, A:sci
     T = Trev[::-1]
     P = Prev[::-1, :]
     return P, T
+
+##########################################
+#control functions
+def sys_update(t, x, u, params):
+    # Get the parameters for the model
+    A = params.get('A')         # vehicle wheelbase
+    rates = params.get('rates')
+    tau = params.get('tau')
+    omega = params.get('omega')
+    
+    
+    # Create COO matrix U with data from u at A's locations
+    
+    U_row = A.row
+    U_col = A.col
+    U = coo_matrix((u, (U_row, U_col)), shape=(A.shape[0], A.shape[1]))
+
+    # Return the derivative of the state
+    return dxdt(x, t, rates, A, tau, omega, U)
+
+def sys_output(t, x, u, params):
+    return x                            # return x, y, theta (full state)
+
+
+
+##########################################################
+#optimization functions
+def extract_input_state(coeffs, nv, ne, npts):
+    x = coeffs[-nv * npts:].reshape(nv, -1)
+    coeffs = coeffs[:-nv * npts]
+    u = coeffs.reshape((ne, -1))
+    return u, x
+
+
+
+##########################################
+#jacobian functions of objectives
+def jac_mean(coeffs):
+    yu = -1/(npts-1)*alpha/ne * np.ones(ne*npts)
+    yx = -1/(npts-1)/nv * np.ones(nv*npts)
+    indices_u = np.sort(np.hstack([np.arange(0, (npts)*ne, ne) , np.arange(ne-1, (npts)*ne+1, ne) ]))
+    indices_x = np.sort(np.hstack([np.arange(0, (npts)*nv, nv) , np.arange(nv-1, (npts)*nv+1, nv) ]))
+
+    yu[indices_u] = -1/(npts-1)*alpha/ne/2
+    yx[indices_x] = -1/(npts-1)/nv/2
+    
+    y = np.hstack([yu,yx])
+
+    return y
