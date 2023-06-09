@@ -14,7 +14,6 @@ import pyoptsparse as pos
 import scipy.sparse as sparse
 
 import networkx as nx
-import winsound
 import time
 
 from typing import List, Set, Dict, Tuple
