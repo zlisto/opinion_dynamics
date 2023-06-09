@@ -136,9 +136,10 @@ def cost_sim(OBJECTIVE, Opinions, U = None, alpha = 0):
     
 def simulate_opinions(params, sys, Ucollocation = None):
     '''Simulate the opinions in sys with parameters in params dictionary with control Ucollocation which has dim ne x npts'''
-    A, E, rates, tau, omega, x0 = params['A'], params['E'], params['rates'], params['tau'], params['omega'],params['opinions0']
-    npts, npts_eval, Tf, alpha, OBJECTIVE = params['npts'], params['npts_eval'], params['Tf'], params['alpha'], params['OBJECTIVE']
-    nv, ne = A.shape[0], E.shape[1]
+    x0 = params['opinions0']
+    E = params['E']
+    npts, npts_eval, Tf, = params['npts'], params['npts_eval'], params['Tf']
+    ne =  E.shape[1]
     
     timepts = np.linspace(0, Tf, npts, endpoint=True)
     t_eval = np.linspace(0, Tf, npts_eval)
