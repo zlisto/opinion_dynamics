@@ -73,7 +73,7 @@ def df_to_G(df):
 
 
 def G_to_params(fname):
-  path_data = "data/"
+  path_data = ""
   df_raw = pd.read_csv(path_data + fname)
   df = df_raw.copy(deep=True)
 
@@ -127,7 +127,15 @@ def G_to_params(fname):
   opinions0 = np.array([G0.nodes[v]["opinion"] for v in G0.nodes()])
   plt.hist(opinions0)
   plt.show()
+    
+  #adjacency matrix of network
+  # A = nx.adjacency_matrix(G)
+  # A = A.tocoo()
+  E0 = nx.incidence_matrix(G,oriented=True)
+  E0 = E0.tocoo()
+  ind = E0.data>0
+  E = coo_matrix((E0.data[ind], (E0.row[ind], E0.col[ind])), E0.shape)  #incidence matrix with only tail of edge
 
-  network_params = {'A':A, 'rates':rates, 'opinions0':opinions0}
+  network_params = {'A':A, 'rates':rates, 'opinions0':opinions0, 'E':E}
 
   return G0, network_params
