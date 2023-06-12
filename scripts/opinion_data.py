@@ -45,9 +45,49 @@ def load_us_election():
     network_params = {'A':A, 'E':E, 'rates':rates, 'opinions0':opinions0}
     return network_params
 
+def load_giletsjaunes():
+    df = pd.read_csv("data/GiletsJaunes_user_polarities_final.csv", sep = ";")
+    rates = np.array(df.n_tweets)
+    opinions0 = np.array(df.user_polarity)
+    assert len(rates)==len(opinions0)
+    vdict = {}
 
+    for index, row in df.iterrows():    
+        v = str(row.id.astype(int))
+        vdict[str(row.id).replace('.0',"")] = index
+    nv = len(vdict.keys())    
 
-def load_brexit():
+    with open('data/GiletsJaunes_full_graph.csv', 'r') as file:
+        # Read each line and store it in the list
+        edge_list = []
+        for line in file:
+            x = line.split(';')
+            v = x[0]
+            friends = x[1:]
+            for friend in friends:
+                edge = (friend,v)
+                edge_list.append(edge)
+        rows, cols = [], []
+        rows_E = []
+        ne = 0
+
+        for edge in edge_list:
+            u,v = edge[0], edge[1]
+            if u in vdict.keys() and v in vdict.keys():
+                rows.append(vdict[v])  #follower
+                cols.append(vdict[u])  #friend/following
+                rows_E.append(vdict[v])
+                ne+=1
+
+        cols_E = np.arange(0,ne)
+        data = np.ones(ne)
+
+        A = coo_matrix((data, (rows, cols)), shape=(nv, nv))
+        E = coo_matrix((data, (rows_E, cols_E)), shape=(nv, ne))
+        network_params = {'A':A, 'E':E, 'rates':rates, 'opinions0':opinions0} 
+        return network_params
+
+def load_brexit_sample():
   path = 'data/'
   fname_opinion_rate = f"{path}Brexit_sample_01.csv"
   fname_adjlist  = f"{path}Brexit_sample.adjlist"
@@ -69,7 +109,7 @@ def load_brexit():
   H = nx.relabel_nodes(G, mapping)
   return H, np.array(opinions_initial), np.array(rate) , mapping_rev
 
-def load_giletsjaunes():
+def load_giletsjaunes_sample():
   path = 'data/'
   fname_opinion_rate = f"{path}GiletsJaunes_sample_02.csv"
   fname_adjlist  = f"{path}GiletsJaunes_sample_02.adjlist"
