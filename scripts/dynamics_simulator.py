@@ -40,8 +40,8 @@ class OpinionSimulatorContinuous():
         self.rate = params['rates']
         self.Rate_matrix = diags(self.rate,0)
 
-        self.control_steps = params['npts_eval'] # overall horizon
-        self.sim_steps = params['npts'] # state eval steps within one control step
+        self.control_steps = params['control_steps'] # overall horizon
+        self.sim_steps = params['sim_steps'] # state eval steps within one control step
         self.dt = 1/self.sim_steps # days
         
         self.control_step_counter = 0
