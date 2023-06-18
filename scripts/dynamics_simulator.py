@@ -64,7 +64,7 @@ class OpinionSimulatorContinuous():
             mu = np.mean(state)
             C = -2/self.nv*(state-mu)
             
-        B = C[self.A.col]*self.rate[self.A.row]*self.shift(state[self.A.row]-state[self.A.col])
+        B = C[self.A.col] * self.rate[self.A.row] * self.shift(state[self.A.row]-state[self.A.col])
         
         return B    
   
@@ -175,6 +175,9 @@ def opinion_simulation(env):
             state, sim_done = env.sim_step(state, control)
             opinions.append(state)
             controls.append(control)
+            
+    controls.append(control) # Make len(controls) = len(opinions)
+    assert len(opinions) == len(controls)
     
     opinions = np.array(opinions)
     controls = np.array(controls)
