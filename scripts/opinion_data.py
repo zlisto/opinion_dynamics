@@ -12,8 +12,8 @@ import seaborn as sns
 
 def load_us_election():
     df = pd.read_csv("data/2016_Second_Presidential_Debate_full.csv")
-
-    rates = np.array(df.rate)
+    ndays_data = 312
+    rates = np.array(df.rate)/ndays_data  #make rates in tweets/day
     opinions0 = np.array(df.opinion_tweet)
 
     edge_list = []
@@ -47,7 +47,8 @@ def load_us_election():
 
 def load_giletsjaunes():
     df = pd.read_csv("data/GiletsJaunes_user_polarities_final.csv", sep = ";")
-    rates = np.array(df.n_tweets)
+    ndays = 119
+    rates = np.array(df.n_tweets)/ndays  #make rates in tweets/day
     opinions0 = np.array(df.user_polarity)
     assert len(rates)==len(opinions0)
     vdict = {}

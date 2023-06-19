@@ -6,9 +6,40 @@ from scipy.sparse import coo_matrix, csr_matrix, diags, identity
 from scipy.optimize import linprog
 import networkx as nx
 import scripts.shadowban_pyoptsparse as sb
+import control as ct
 
+def shadow_ban_fast(params, sys, ndays = 7, shadowban = True):
+    npts = params['npts']
+    A = params['A']
+    E = params['E']
 
-
+    nv, ne = A.shape[0], E.shape[1]
+    Opinions_all = np.zeros((ndays+1, nv))
+    U_all = np.zeros(ndays+1)
+    T_all = np.arange(0,ndays+1,1)
+    Opinions_all[0,:] = params['opinions0']
+    timepts = np.linspace(0, 1, npts, endpoint=True)
+    for day in range(ndays):
+        if day ==0:
+            x0 = params['opinions0']
+        else:
+            x0 = Opinions[-1,:]
+            
+        if shadowban==True:
+            U0 = shadowban_lp(params,x0)
+            resp = ct.input_output_response(sys, timepts, U0.tolist(), x0,
+                                    t_eval= 'T', params = params)
+        else:
+            #no shadow banning
+            U0 = np.ones(2)
+            resp = ct.input_output_response(sys, timepts, 1, x0,
+                                    t_eval= 'T', params = params)        
+        
+        Opinions = resp.outputs.T  
+        Opinions_all[day+1,:]  = Opinions[-1,:]
+        U_all[day+1] =  U0.mean()
+        #T_all[day*npts: day*npts+npts] = day + T
+    return T_all, Opinions_all, U_all
 
 def sys_update_mean(t, x, u, params):
     # Get the parameters for the model
