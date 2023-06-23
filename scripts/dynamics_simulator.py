@@ -9,7 +9,7 @@ def cost_sim(OBJECTIVE, Opinions, U = None, alpha = 0):
     '''Cost of opinions and control in simulator.'''
     if U is None:
         U = np.ones(Opinions.shape)
-    cu = -alpha*U.mean(axis=1)         
+    cu = -alpha*U.mean(axis=1)
 
     if OBJECTIVE == 'MEAN':
         cx = -Opinions.mean(axis = 1)
@@ -40,7 +40,7 @@ class OpinionSimulatorContinuous():
         self.rate = params['rates']
         self.Rate_matrix = diags(self.rate,0)
 
-        self.control_steps = params['control_steps'] # overall horizon
+        self.control_steps = params['control_steps'] # overall control points
         self.sim_steps = params['sim_steps'] # state eval steps within one control step
         self.dt = 1/self.sim_steps # days
         
@@ -158,8 +158,8 @@ class OpinionSimulatorContinuous():
         return state, control_done, sim_done
 
 
-
-def opinion_simulation(env):
+# list data structure
+def opinion_simulation_list(env):
     opinions = []
     controls = []
     
@@ -181,5 +181,38 @@ def opinion_simulation(env):
     
     opinions = np.array(opinions)
     controls = np.array(controls)
+
+    return opinions, controls
+
+
+
+# array data structure
+def opinion_simulation_array(env):
+    control_steps = env.control_steps
+    sim_steps = env.sim_steps
+    nv = env.nv
+    ne = env.ne
+    
+    opinions = np.empty((sim_steps * control_steps + 1, nv))
+    controls = np.empty((control_steps, ne))
+
+    # i, j = 0
+    state, control_done, sim_done = env.reset()
+    opinions[0] = state
+
+    opinion_index = 1
+    control_index = 0
+
+    while not control_done:# i = 0 ~ (control_steps-1)
+        control, control_done = env.control_step(state)
+        
+        sim_done = False # Reset sim_done for each control interval
+        while not sim_done:# j = 1 ~ sim_steps
+            state, sim_done = env.sim_step(state, control)
+            opinions[opinion_index] = state
+            opinion_index += 1
+        
+        controls[control_index] = control
+        control_index += 1
 
     return opinions, controls
