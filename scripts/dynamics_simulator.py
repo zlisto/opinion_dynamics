@@ -3,9 +3,7 @@ from scipy.optimize import linprog
 from scipy.sparse import coo_matrix,diags
 
 
-
-
-def cost_sim(OBJECTIVE, Opinions, U = None, alpha = 0):
+def cost_sim(OBJECTIVE, Opinions, U = None, thres = 0.95, alpha = 0):
     '''Cost of opinions and control in simulator.'''
     if U is None:
         U = np.ones(Opinions.shape)
@@ -17,12 +15,27 @@ def cost_sim(OBJECTIVE, Opinions, U = None, alpha = 0):
         cx = -Opinions.var(axis = 1)
     elif  OBJECTIVE == 'VARMIN':
         cx = Opinions.var(axis = 1)
+    elif  OBJECTIVE == 'EXTMAX':
+        cx = -np.mean(Opinions >= thres, axis=1) # ratio of extreme opinions
+    elif  OBJECTIVE == 'EXTMIN':
+        cx = np.mean(Opinions >= thres, axis=1)
     else:
-        print("Error: Wrong Objective.  Choose from NONE, MEAN, VARMAX, VARMIN")
+        print("Error: Wrong Objective.  Choose from NONE, MEAN, VARMAX, VARMIN, EXTMAX, EXTMIN")
         cx = None
     
     return np.mean(cu) + np.mean(cx)
 
+
+def sigmoid(y):
+    return 1 / (1 + np.exp(-y))
+    # return np.where(np.abs(y) < 0.01, 0.5, 0)
+
+def sigmoid_derivative_kx(x, k, thres):
+    sigmoid_kxthr = sigmoid(k * (x - thres))
+    
+    return k * sigmoid_kxthr * (1 - sigmoid_kxthr)
+
+    # return np.where(np.abs(x-thres) < 0.01, 1.1, 0)
 
 
 class OpinionSimulatorContinuous():
@@ -48,6 +61,7 @@ class OpinionSimulatorContinuous():
         self.sim_step_counter = 0
 
         self.OBJECTIVE = params['OBJECTIVE']
+        self.thres = params['thres']
         self.shadowban = shadowban
         self.smax = params['smax']
 
@@ -63,6 +77,12 @@ class OpinionSimulatorContinuous():
         elif self.OBJECTIVE == 'VARMAX':
             mu = np.mean(state)
             C = -2/self.nv*(state-mu)
+        
+        elif self.OBJECTIVE == 'EXTMIN':
+            C = sigmoid_derivative_kx(state, k=1, thres=self.thres)
+            
+        elif self.OBJECTIVE == 'EXTMAX':
+            C = -sigmoid_derivative_kx(state, k=1, thres=self.thres)            
             
         B = C[self.A.col] * self.rate[self.A.row] * self.shift(state[self.A.row]-state[self.A.col])
         
