@@ -21,9 +21,9 @@ def plot_opinion_quantiles(T ,Opinions, q=[50, 25, 75, 5, 95], U = None):
     quantiles = np.percentile(Opinions, q=q, axis=1)
 
     # Plot quantiles
-    if U is not None:
-        plt.plot(T, 1-U.mean(axis=1), '.-', color = 'red', label='mean shadow ban strength')
-        plt.legend(loc='upper right')
+    # if U is not None:
+    #     plt.plot(T, 1-U.mean(axis=1))#, '.-', color = 'red', label='mean shadow ban strength')
+    #     plt.legend(loc='upper right')
     
     plt.plot(T, quantiles[0], color='black', label='Median Opinion')
     plt.fill_between(T, quantiles[1], quantiles[2], color='blue', alpha=0.5, label='25th-75th Quantiles')
@@ -34,7 +34,7 @@ def plot_opinion_quantiles(T ,Opinions, q=[50, 25, 75, 5, 95], U = None):
     plt.grid()
     
     
-def plot_smax_sens(smax_range: np.ndarray, objs_ban: list, means_ban: list):  
+def plot_smax_sens(smax_range: np.ndarray, objs_ban: list, means_ban: list):
     bubble_size = means_ban
 
     # Normalize bubble size to desired range

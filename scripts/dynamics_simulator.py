@@ -33,9 +33,10 @@ def sigmoid(y):
 def sigmoid_derivative_kx(x, k, thres):
     sigmoid_kxthr = sigmoid(k * (x - thres))
     
-    return k * sigmoid_kxthr * (1 - sigmoid_kxthr)
+    # return k * sigmoid_kxthr * (1 - sigmoid_kxthr)
 
-    # return np.where(np.abs(x-thres) < 0.01, 1.1, 0)
+    return np.where(x >= thres, x, 0)
+# x*(x>=thres) #ReLU
 
 
 class OpinionSimulatorContinuous():
@@ -79,7 +80,7 @@ class OpinionSimulatorContinuous():
             C = -2/self.nv*(state-mu)
         
         elif self.OBJECTIVE == 'EXTMIN':
-            C = sigmoid_derivative_kx(state, k=1, thres=self.thres)
+            C = sigmoid_derivative_kx(state, k=1, thres=self.thres) #check if all zeros. try RELU
             
         elif self.OBJECTIVE == 'EXTMAX':
             C = -sigmoid_derivative_kx(state, k=1, thres=self.thres)            
@@ -97,12 +98,9 @@ class OpinionSimulatorContinuous():
         A_ub = -np.ones((1,self.ne))
         b_ub = -self.ne*(1-self.smax)
 
-        # start_time = time.time()
         res = linprog(c, A_ub=A_ub, b_ub=b_ub, bounds=(0,1))
-        # print(f"LP took {time.time()-start_time:.4f} sec")
         
         return np.array(res.x)
-
 
     
     def control_step(self, state):
