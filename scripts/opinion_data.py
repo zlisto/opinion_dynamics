@@ -37,7 +37,7 @@ def load_us_election():
         if u in vdict.keys() and v in vdict.keys():
             rows.append(vdict[u])  #friend/following
             cols.append(vdict[v])  #follower
-            rows_E.append(vdict[u])
+            rows_E.append(vdict[v])#follower
             ne+=1
             
     data = np.ones(ne)
@@ -48,41 +48,6 @@ def load_us_election():
     network_params = {'A':A, 'E':E, 'rates':rates, 'opinions0':opinions0}
     return network_params
 
-
-# def load_us_election():
-#     df = pd.read_csv("data/2016_Second_Presidential_Debate_full.csv")
-#     ndays_data = 312
-#     rates = np.array(df.rate)/ndays_data  #make rates in tweets/day
-#     opinions0 = np.array(df.opinion_tweet)
-
-#     edge_list = []
-#     vdict = {}
-
-#     for index, row in df.iterrows():    
-#         v = str(row.user_id)
-#         vdict[v] = index
-#         if type(row.friend_names) == str:
-#             friends = row.friend_names.split(",")
-#             for friend in friends:
-#                 edge = (friend,v)
-#                 edge_list.append(edge)
-#     rows, cols = [], []
-#     rows_E = []
-#     ne = len(edge_list)
-#     nv = len(vdict.keys())
-#     data = np.ones(ne)
-#     for edge in edge_list:
-#         u,v = edge[0], edge[1]
-#         rows.append(vdict[v])  #follower
-#         cols.append(vdict[u])  #friend/following
-#         rows_E.append(vdict[v])
-
-#     cols_E = np.arange(0,ne)
-
-#     A = coo_matrix((data, (rows, cols)), shape=(nv, nv))
-#     E = coo_matrix((data, (rows_E, cols_E)), shape=(nv, ne))
-#     network_params = {'A':A, 'E':E, 'rates':rates, 'opinions0':opinions0}
-#     return network_params
 
 def load_giletsjaunes():
     df = pd.read_csv("data/GiletsJaunes_user_polarities_final.csv", sep = ";")
@@ -114,9 +79,9 @@ def load_giletsjaunes():
         for edge in edge_list:
             u,v = edge[0], edge[1]
             if u in vdict.keys() and v in vdict.keys():
-                rows.append(vdict[u])  #follower
-                cols.append(vdict[v])  #friend/following
-                rows_E.append(vdict[u])
+                rows.append(vdict[u])  #friend/following
+                cols.append(vdict[v])  #follower
+                rows_E.append(vdict[v])#follower
                 ne+=1
 
         cols_E = np.arange(0,ne)
@@ -127,6 +92,10 @@ def load_giletsjaunes():
         network_params = {'A':A, 'E':E, 'rates':rates, 'opinions0':opinions0} 
         return network_params
 
+
+# def load_brexit():
+    
+    
 def load_brexit_sample():
   path = 'data/'
   fname_opinion_rate = f"{path}Brexit_sample_01.csv"

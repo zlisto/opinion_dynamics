@@ -69,15 +69,15 @@ class OpinionSimulatorContinuous():
         
     def get_B(self, state):        
         if self.OBJECTIVE == 'MEAN':
-            C = -1/self.nv*np.ones(self.nv)
+            C = -np.ones(self.nv)#-1/self.nv*np.ones(self.nv)
             
         elif self.OBJECTIVE == 'VARMIN':
             mu = np.mean(state)
-            C = 2/self.nv*(state-mu)
+            C = (state-mu)#2/self.nv*(state-mu)
             
         elif self.OBJECTIVE == 'VARMAX':
             mu = np.mean(state)
-            C = -2/self.nv*(state-mu)
+            C = -(state-mu)#-2/self.nv*(state-mu)
         
         elif self.OBJECTIVE == 'EXTMIN':
             C = sigmoid_derivative_kx(state, k=1, thres=self.thres) #check if all zeros. try RELU
@@ -93,6 +93,8 @@ class OpinionSimulatorContinuous():
     def shadowban_LP(self, state):
         # Control variable coefficient
         c = self.get_B(state)
+        # Round c to shorter numbers to avoid solver error
+        c = np.round(c, decimals=5)
         
         # Average ban constraint
         A_ub = -np.ones((1,self.ne))
@@ -198,7 +200,7 @@ def opinion_simulation_list(env):
     assert len(opinions) == len(controls)
     
     opinions = np.array(opinions)
-    controls = np.array(controls)
+    controls = np.array(controls) # notice out of memory
 
     return opinions, controls
 
